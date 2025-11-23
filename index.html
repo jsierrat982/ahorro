@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Reto de Ahorro</title>
     
-    <!-- Estilos Externos (Tailwind CSS y Fuentes) -->
+    <!-- Estilos Externos (Tailwind CSS, Fuentes y Confetti) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- Estilos Personalizados (CSS) -->
@@ -16,6 +17,7 @@
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: #f3f4f6; 
+            overflow-x: hidden;
         }
         
         /* Efectos de la cuadrícula */
@@ -23,17 +25,35 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         }
         .cell:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+            transform: translateY(-4px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         
         /* Animación del Check */
-        @keyframes scaleIn { 
-            from { transform: scale(0); opacity: 0; } 
-            to { transform: scale(1); opacity: 1; } 
+        @keyframes popIn { 
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; } 
+            70% { transform: scale(1.2) rotate(0deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; } 
         }
         .check-icon { 
-            animation: scaleIn 0.3s ease-out forwards; 
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+        }
+
+        /* Animación de Texto Flotante (Dinero) */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 0; }
+            20% { transform: translateY(-20px) scale(1.1); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1); opacity: 0; }
+        }
+        .floating-text {
+            position: fixed;
+            pointer-events: none;
+            color: #059669; /* emerald-600 */
+            font-weight: 800;
+            font-size: 1.2rem;
+            z-index: 100;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.8);
         }
         
         /* Utilidades para el Modal */
@@ -58,8 +78,8 @@
         <!-- HEADER -->
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                    <i class="fas fa-piggy-bank text-emerald-500 mr-2"></i>Reto de Ahorro
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2 drop-shadow-sm">
+                    <i class="fas fa-piggy-bank text-emerald-500 mr-2 bounce-icon"></i>Reto de Ahorro
                 </h1>
                 <p class="text-gray-600">
                     <span id="status-indicator" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 transition-colors duration-300">
@@ -68,15 +88,15 @@
                     Gestiona tu progreso en la nube.
                 </p>
             </div>
-            <button onclick="toggleModal('settings-modal')" class="bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-gray-800 transition shadow-lg flex items-center gap-2 font-medium">
+            <button onclick="toggleModal('settings-modal')" class="bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-gray-800 transition shadow-lg flex items-center gap-2 font-medium transform hover:scale-105 active:scale-95">
                 <i class="fab fa-github text-xl"></i> Configurar GitHub
             </button>
         </header>
 
         <!-- GRID CONTAINER -->
-        <div class="bg-white rounded-xl shadow-xl p-4 md:p-6 mb-24 relative overflow-hidden">
+        <div class="bg-white rounded-xl shadow-xl p-4 md:p-6 mb-24 relative overflow-hidden ring-1 ring-gray-100">
             <!-- Loading Overlay -->
-            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center transition-opacity">
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center transition-opacity backdrop-blur-sm">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
                 <h2 class="text-center text-gray-500 text-sm font-semibold">Sincronizando con GitHub...</h2>
             </div>
@@ -88,7 +108,7 @@
         </div>
 
         <!-- FOOTER / RESUMEN -->
-        <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 transform transition-transform duration-300 z-40">
+        <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 transform transition-transform duration-300 z-40">
             <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                 
                 <!-- Barra de Progreso -->
@@ -96,8 +116,8 @@
                     <div class="text-gray-600 whitespace-nowrap font-medium">
                         Progreso: <span id="progress-text" class="font-bold text-gray-900">0/35</span>
                     </div>
-                    <div class="w-full md:w-48 h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="h-full bg-emerald-500 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
+                    <div class="w-full md:w-48 h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
                     </div>
                 </div>
                 
@@ -176,14 +196,13 @@
         </div>
     </div>
 
-    <!-- LÓGICA DE LA APLICACIÓN (SCRIPT) -->
+    <!-- LÓGICA DE LA APLICACIÓN -->
     <script>
         // === CONFIGURACIÓN GLOBAL ===
-        // Genera la cuadrícula de $160k a $200k
         const columnValues = [160000, 170000, 180000, 190000, 200000];
         const totalRows = 7; 
-        const LOCAL_STORAGE_KEY = 'savings_data_v2'; // Clave para guardar en navegador
-        const CONFIG_KEY = 'github_config_v2';       // Clave para guardar credenciales
+        const LOCAL_STORAGE_KEY = 'savings_data_v2'; 
+        const CONFIG_KEY = 'github_config_v2';
 
         // === ESTADO DE LA APP ===
         let appState = {};
@@ -195,7 +214,6 @@
             loadLocalConfig();
             renderGrid();
             
-            // Prioridad: Intentar cargar de GitHub si existen credenciales
             if (isConfigured()) {
                 loadFromGitHub();
             } else {
@@ -203,9 +221,11 @@
             }
         });
 
-        // === LÓGICA DE NEGOCIO ===
-        function toggleCell(index, value) {
-            // Alternar estado de la celda
+        // === LÓGICA DE NEGOCIO Y EFECTOS ===
+        function toggleCell(event, index, value) {
+            let justCompleted = false;
+
+            // 1. Lógica de estado
             if (appState[index]) {
                 delete appState[index]; // Desmarcar
             } else {
@@ -215,68 +235,134 @@
                     date: now.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }),
                     timestamp: now.getTime()
                 };
+                justCompleted = true; // Acabamos de marcar
             }
             
-            // Actualización optimista (UI primero)
+            // 2. Actualizar UI
             updateCellVisuals(index);
             updateSummary();
             
-            // Guardar datos
+            // 3. Efectos Visuales (Solo si se marcó)
+            if (justCompleted) {
+                // A. Confeti pequeño en el clic
+                triggerSmallConfetti(event);
+                
+                // B. Texto flotante
+                showFloatingText(event, value);
+
+                // C. Verificar si se completó TODO el reto
+                checkTotalCompletion();
+            }
+
+            // 4. Guardar
             saveData();
         }
 
-        async function saveData() {
-            // 1. Siempre guardar respaldo local
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState));
+        // --- FUNCIONES DE EFECTOS ---
+        function triggerSmallConfetti(e) {
+            // Normalizar coordenadas para canvas-confetti (0 a 1)
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
 
-            // 2. Si hay GitHub configurado, guardar en la nube
-            if (isConfigured()) {
-                await saveToGitHub();
+            confetti({
+                particleCount: 40,
+                spread: 50,
+                origin: { x: x, y: y },
+                colors: ['#10b981', '#34d399', '#fbbf24'], // Verdes y dorado
+                disableForReducedMotion: true,
+                zIndex: 100
+            });
+        }
+
+        function showFloatingText(e, value) {
+            const formatted = formatCurrency(value);
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.textContent = `+ ${formatted}`;
+            
+            // Posicionar donde ocurrió el clic
+            el.style.left = `${e.clientX}px`;
+            el.style.top = `${e.clientY}px`;
+            
+            document.body.appendChild(el);
+            
+            // Limpiar DOM después de la animación
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function checkTotalCompletion() {
+            const totalCells = totalRows * columnValues.length;
+            const currentCount = Object.keys(appState).length;
+            
+            if (currentCount === totalCells) {
+                // Disparar celebración mayor
+                setTimeout(() => {
+                    const duration = 3000;
+                    const end = Date.now() + duration;
+
+                    (function frame() {
+                        confetti({
+                            particleCount: 5,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#10b981', '#ffd700']
+                        });
+                        confetti({
+                            particleCount: 5,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#10b981', '#ffd700']
+                        });
+
+                        if (Date.now() < end) {
+                            requestAnimationFrame(frame);
+                        }
+                    }());
+                    
+                    alert("¡FELICITACIONES! Has completado tu reto de ahorro.");
+                }, 500);
             }
         }
 
-        // === INTEGRACIÓN GITHUB (API) ===
-        function isConfigured() {
-            return ghConfig.token && ghConfig.username && ghConfig.repo;
+        // === PERSISTENCIA (SIN CAMBIOS) ===
+        async function saveData() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState));
+            if (isConfigured()) await saveToGitHub();
         }
+
+        function isConfigured() { return ghConfig.token && ghConfig.username && ghConfig.repo; }
 
         async function loadFromGitHub() {
             toggleLoading(true);
             updateStatus('Conectando...', 'yellow');
-
             const url = `https://api.github.com/repos/${ghConfig.username}/${ghConfig.repo}/contents/${ghConfig.filename}`;
 
             try {
                 const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `token ${ghConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    },
-                    cache: 'no-store' // Evitar caché antigua
+                    headers: { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json' },
+                    cache: 'no-store'
                 });
 
                 if (response.status === 404) {
-                    // Archivo nuevo
-                    console.log("Archivo no existe en GitHub. Se creará al guardar.");
                     currentFileSha = null;
                     updateStatus('Conectado (Nuevo)', 'green');
                 } else if (response.ok) {
                     const data = await response.json();
                     currentFileSha = data.sha;
-                    
-                    // Decodificar Base64 de forma segura con UTF-8
                     const content = decodeURIComponent(escape(window.atob(data.content)));
                     appState = JSON.parse(content);
-                    
                     refreshGridUI();
                     updateStatus('Sincronizado', 'green');
                 } else {
+                    if(response.status === 401) alert('Error 401: Token inválido.');
+                    else if(response.status === 404) alert('Error 404: Repo no encontrado.');
                     throw new Error(`GitHub API: ${response.status}`);
                 }
             } catch (error) {
                 console.error("Error GitHub:", error);
                 updateStatus('Error Conexión', 'red');
-                // Fallback a local si falla GitHub
                 loadLocalData();
             } finally {
                 toggleLoading(false);
@@ -286,27 +372,16 @@
         async function saveToGitHub() {
             updateStatus('Guardando...', 'blue');
             const url = `https://api.github.com/repos/${ghConfig.username}/${ghConfig.repo}/contents/${ghConfig.filename}`;
-            
-            // Preparar contenido Base64
             const jsonString = JSON.stringify(appState, null, 2);
             const contentBase64 = window.btoa(unescape(encodeURIComponent(jsonString)));
 
-            const body = {
-                message: `Update: ${new Date().toLocaleString()}`,
-                content: contentBase64
-            };
-
-            if (currentFileSha) {
-                body.sha = currentFileSha;
-            }
+            const body = { message: `Update: ${new Date().toLocaleString()}`, content: contentBase64 };
+            if (currentFileSha) body.sha = currentFileSha;
 
             try {
                 const response = await fetch(url, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${ghConfig.token}`,
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Authorization': `token ${ghConfig.token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
 
@@ -315,15 +390,18 @@
                     currentFileSha = data.content.sha;
                     updateStatus('Guardado en GitHub', 'green');
                 } else {
+                    const err = await response.json();
+                    let errorMsg = `Error al guardar (${response.status}).`;
+                    if(response.status === 401) errorMsg = "Error 401: Token inválido.";
+                    alert(errorMsg);
                     updateStatus('Error al Guardar', 'red');
                 }
             } catch (error) {
-                console.error(error);
                 updateStatus('Error Red', 'red');
             }
         }
 
-        // === GESTIÓN DE UI ===
+        // === UI HELPERS ===
         function renderGrid() {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
@@ -337,9 +415,10 @@
                     const cell = document.createElement('div');
                     cell.id = `cell-${cellId}`;
                     cell.className = 'cell relative bg-white border-2 border-gray-100 rounded-xl cursor-pointer h-24 select-none overflow-hidden group';
-                    cell.onclick = () => toggleCell(cellId, value);
                     
-                    // Contenido inicial (se actualiza luego)
+                    // PASAMOS EL EVENTO 'e' A LA FUNCIÓN toggleCell
+                    cell.onclick = (e) => toggleCell(e, cellId, value);
+                    
                     cell.innerHTML = `
                         <div class="content w-full h-full flex flex-col items-center justify-center p-2">
                              <span class="text-gray-700 text-lg font-bold tracking-tight group-hover:text-emerald-600 transition-colors">
@@ -348,7 +427,6 @@
                             <span class="text-[10px] text-gray-400 mt-1 uppercase font-semibold tracking-wider">Marcar</span>
                         </div>
                     `;
-                    
                     container.appendChild(cell);
                     index++;
                 }
@@ -358,12 +436,8 @@
         function updateCellVisuals(index) {
             const cell = document.getElementById(`cell-${index}`);
             if (!cell) return;
-            
             const data = appState[index];
-            const contentDiv = cell.querySelector('.content');
-            
             if (data) {
-                // Estado: MARCADO
                 cell.className = 'cell relative bg-emerald-50 border-2 border-emerald-500 rounded-xl cursor-pointer h-24 select-none overflow-hidden shadow-md transform scale-[0.98]';
                 cell.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full animate-fade-in">
@@ -377,11 +451,8 @@
                     </div>
                 `;
             } else {
-                // Estado: DESMARCADO (Reset)
-                // Obtenemos valor original del array
                 const colIndex = index % columnValues.length;
                 const value = columnValues[colIndex];
-                
                 cell.className = 'cell relative bg-white border-2 border-gray-100 rounded-xl cursor-pointer h-24 select-none overflow-hidden group hover:border-emerald-200';
                 cell.innerHTML = `
                     <div class="content w-full h-full flex flex-col items-center justify-center p-2">
@@ -407,52 +478,34 @@
             const count = entries.length;
             const total = entries.reduce((sum, item) => sum + item.value, 0);
             const max = totalRows * columnValues.length;
-            
-            // Textos
             document.getElementById('progress-text').textContent = `${count}/${max}`;
             document.getElementById('total-amount').textContent = formatCurrency(total);
-            
-            // Barra progreso
-            const pct = (count / max) * 100;
-            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-bar').style.width = `${(count / max) * 100}%`;
         }
 
-        // === UTILIDADES ===
         function formatCurrency(val) {
-            return new Intl.NumberFormat('es-CO', { 
-                style: 'currency', 
-                currency: 'COP', 
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(val);
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
         }
 
         function updateStatus(msg, color) {
             const el = document.getElementById('status-indicator');
             const dot = el.querySelector('span');
-            
-            // Clases de colores Tailwind
             const colors = {
                 green: ['bg-emerald-100', 'text-emerald-800', 'bg-emerald-500'],
                 yellow: ['bg-yellow-100', 'text-yellow-800', 'bg-yellow-500'],
                 red: ['bg-red-100', 'text-red-800', 'bg-red-500'],
                 blue: ['bg-blue-100', 'text-blue-800', 'bg-blue-500']
             };
-            
             const [bg, text, dotBg] = colors[color] || ['bg-gray-100', 'text-gray-800', 'bg-gray-400'];
-            
             el.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors duration-300 ${bg} ${text}`;
             dot.className = `w-2 h-2 mr-1 rounded-full ${dotBg}`;
             el.innerHTML = `<span class="${dot.className}"></span> ${msg}`;
         }
 
-        function toggleLoading(show) {
-            const el = document.getElementById('loading-overlay');
-            el.classList.toggle('hidden', !show);
-        }
-
+        function toggleLoading(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); }
+        
         function resetData() {
-            if(confirm('¿Estás seguro de reiniciar todo el progreso? Esto borrará los datos locales y en GitHub.')) {
+            if(confirm('¿Reiniciar todo?')) {
                 appState = {};
                 localStorage.removeItem(LOCAL_STORAGE_KEY);
                 refreshGridUI();
@@ -460,27 +513,13 @@
             }
         }
         
-        function syncData() {
-            if (isConfigured()) loadFromGitHub();
-            else toggleModal('settings-modal');
-        }
-
-        // === CARGA LOCAL (AÑADIDA) ===
+        function syncData() { if (isConfigured()) loadFromGitHub(); else toggleModal('settings-modal'); }
+        
         function loadLocalData() {
             const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (stored) {
-                try {
-                    appState = JSON.parse(stored);
-                    refreshGridUI();
-                } catch (e) {
-                    console.error("Error cargando datos locales:", e);
-                    // Si falla el parseo, reiniciamos el estado para evitar bloqueos
-                    appState = {};
-                }
-            }
+            if (stored) { try { appState = JSON.parse(stored); refreshGridUI(); } catch (e) { appState = {}; } }
         }
 
-        // === CONFIGURACIÓN DE CREDENCIALES ===
         function loadLocalConfig() {
             const stored = localStorage.getItem(CONFIG_KEY);
             if (stored) {
@@ -495,36 +534,23 @@
             const u = document.getElementById('gh-username').value.trim();
             const r = document.getElementById('gh-repo').value.trim();
             const t = document.getElementById('gh-token').value.trim();
-            
-            if (!u || !r || !t) {
-                alert('Todos los campos son obligatorios para conectar.');
-                return;
-            }
-            
+            if (!u || !r || !t) { alert('Todos los campos son obligatorios.'); return; }
             ghConfig = { username: u, repo: r, token: t, filename: 'datos_ahorro.json' };
             localStorage.setItem(CONFIG_KEY, JSON.stringify(ghConfig));
-            
             toggleModal('settings-modal');
             loadFromGitHub();
         }
 
-        // Modal Helpers
         function toggleModal(id) {
             const modal = document.getElementById(id);
             const content = modal.querySelector('#modal-content');
-            
-            const isActive = !modal.classList.contains('opacity-0');
-            
-            if (isActive) {
-                // Cerrar
+            if (!modal.classList.contains('opacity-0')) {
                 modal.classList.add('opacity-0', 'pointer-events-none');
                 content.classList.remove('scale-100', 'opacity-100');
                 content.classList.add('scale-95', 'opacity-0');
                 document.body.classList.remove('modal-active');
             } else {
-                // Abrir
                 modal.classList.remove('opacity-0', 'pointer-events-none');
-                // Timeout pequeño para permitir que la clase opacity-0 se quite antes de animar
                 setTimeout(() => {
                     content.classList.remove('scale-95', 'opacity-0');
                     content.classList.add('scale-100', 'opacity-100');
