@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Reto de Ahorro</title>
+    <title>Mi Reto de Ahorro V3</title>
     
-    <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#10b981">
     <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/000000/money-box.png">
     
-    <!-- Librerías -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -19,8 +18,10 @@
             theme: { extend: { colors: { dark: { bg: '#0f172a', card: '#1e293b', text: '#f1f5f9' } } } }
         }
     </script>
+    
+    <!-- Confetti & Icons -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -53,13 +54,14 @@
         .toast {
             background: white; padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.15);
             display: flex; align-items: center; gap: 12px; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            pointer-events: auto; max-width: 90vw;
+            pointer-events: auto; max-width: 90vw; border-left-width: 4px;
         }
         .dark .toast { background: #1f293b; color: #f1f5f9; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.5); }
         .toast.show { transform: translateX(0); }
-        .toast-success { border-left: 4px solid #10b981; }
-        .toast-error { border-left: 4px solid #ef4444; }
-        .toast-info { border-left: 4px solid #3b82f6; }
+        .toast-success { border-color: #10b981; }
+        .toast-error { border-color: #ef4444; }
+        .toast-info { border-color: #3b82f6; }
+        .toast-warning { border-color: #f59e0b; }
 
         .modal { transition: opacity 0.25s ease; backdrop-filter: blur(4px); }
         body.modal-active { overflow: hidden; }
@@ -71,223 +73,308 @@
         .dark ::-webkit-scrollbar-track { background: #0f172a; }
         .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         
-        /* Pestañas en Modal */
         .tab-btn.active { border-bottom: 2px solid #10b981; color: #10b981; }
+        
+        /* Utility for hiding scrollbar on elements */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 text-gray-800 dark:text-gray-100 bg-[#f3f4f6] dark:bg-dark-bg pb-36 select-none">
+<body class="min-h-screen p-4 md:p-8 text-gray-800 dark:text-gray-100 bg-[#f3f4f6] dark:bg-dark-bg pb-40 select-none">
 
     <div id="toast-container"></div>
 
-    <div class="max-w-5xl mx-auto">
-        <!-- HEADER -->
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
         <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-1 drop-shadow-sm">
-                    <i class="fas fa-piggy-bank text-emerald-500 mr-2"></i>Reto de Ahorro
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-1 drop-shadow-sm flex items-center justify-center md:justify-start gap-3">
+                    <i class="fas fa-piggy-bank text-emerald-500"></i>
+                    <span>Reto de Ahorro</span>
                 </h1>
-                <div class="flex items-center justify-center md:justify-start gap-2">
-                    <span id="status-indicator" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors">
-                        <span class="w-2 h-2 mr-1 bg-gray-400 rounded-full"></span> Local
-                    </span>
-                    <span id="grid-info" class="text-xs text-gray-400 dark:text-gray-500"></span>
+                <div class="flex items-center justify-center md:justify-start gap-2 mt-2">
+                    <button id="sync-status-btn" onclick="toggleModal('settings-modal'); switchTab('tab-cloud')" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 transition cursor-pointer group">
+                        <span id="status-dot" class="w-2 h-2 mr-2 bg-gray-400 rounded-full group-hover:animate-pulse"></span> 
+                        <span id="status-text">Local</span>
+                    </button>
+                    <span id="grid-info" class="text-xs text-gray-400 dark:text-gray-500 font-mono"></span>
                 </div>
             </div>
             
-            <div class="flex gap-2">
-                <button onclick="toggleTheme()" class="bg-white dark:bg-gray-800 text-gray-600 dark:text-yellow-400 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95 transition">
+            <div class="flex gap-3">
+                <button onclick="toggleTheme()" aria-label="Cambiar tema" class="bg-white dark:bg-gray-800 text-gray-600 dark:text-yellow-400 w-12 h-12 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95 transition flex items-center justify-center text-xl">
                     <i class="fas fa-moon dark:hidden"></i><i class="fas fa-sun hidden dark:inline"></i>
                 </button>
-                <button onclick="toggleModal('settings-modal')" class="bg-gray-900 dark:bg-gray-700 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-600 shadow-md flex items-center gap-2 font-medium active:scale-95 transition text-sm">
-                    <i class="fas fa-cog"></i> Configurar
+                <button onclick="toggleModal('settings-modal')" aria-label="Configurar" class="bg-gray-900 dark:bg-gray-700 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-600 shadow-md flex items-center gap-2 font-medium active:scale-95 transition text-sm border border-transparent dark:border-gray-600">
+                    <i class="fas fa-cog text-lg"></i> <span class="hidden sm:inline">Configurar</span>
                 </button>
             </div>
         </header>
 
-        <!-- GRID -->
+        <!-- Main Grid -->
         <div class="bg-white dark:bg-dark-card rounded-2xl shadow-xl p-4 md:p-6 mb-8 relative overflow-hidden ring-1 ring-gray-100 dark:ring-gray-700">
+            <!-- Loading Overlay -->
             <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 dark:bg-gray-900/95 z-20 flex flex-col items-center justify-center transition-opacity backdrop-blur-sm">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 dark:border-gray-700 h-10 w-10 mb-3"></div>
-                <h2 class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest">Sincronizando...</h2>
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-emerald-500 h-12 w-12 mb-4"></div>
+                <h2 class="text-gray-600 dark:text-gray-300 text-sm font-bold uppercase tracking-widest animate-pulse">Sincronizando...</h2>
             </div>
 
-            <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+            <!-- Empty State / Grid -->
+            <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
         </div>
         
-        <!-- FOOTER -->
-        <div class="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-full md:max-w-4xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl p-4 z-40">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <div class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase">
-                        Progreso <span id="progress-text" class="text-gray-900 dark:text-white ml-1">0%</span>
+        <!-- Bottom Bar (Stats) -->
+        <div class="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-full md:max-w-4xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl p-4 z-40 transition-all duration-500" id="stats-bar">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <!-- Progress Bar -->
+                <div class="flex items-center gap-4 w-full md:flex-1">
+                    <div class="flex flex-col items-center w-12">
+                         <span id="progress-text" class="text-sm font-black text-emerald-600 dark:text-emerald-400">0%</span>
                     </div>
-                    <div class="flex-1 md:w-48 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="h-full bg-emerald-500 transition-all duration-700 ease-out w-0"></div>
+                    <div class="flex-1 h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner relative">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700 ease-out w-0 relative">
+                             <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-between w-full md:w-auto gap-6">
-                    <div class="text-right">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold">Ahorrado</p>
+                <!-- Amounts & Actions -->
+                <div class="flex items-center justify-between w-full md:w-auto gap-6 border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-3 md:pt-0">
+                    <div class="text-right min-w-[120px]">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Ahorrado Total</p>
                         <div class="flex items-baseline justify-end gap-1">
-                            <p id="total-amount" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 leading-none">$ 0</p>
+                            <p id="total-amount" class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white leading-none font-mono tracking-tight">$ 0</p>
                         </div>
-                        <p id="goal-display" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Meta: $ 0</p>
+                        <p id="goal-display" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">Meta: $ 0</p>
                     </div>
 
                     <div class="flex gap-2">
-                        <button onclick="openHistory()" class="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition" title="Ver Historial"><i class="fas fa-history"></i></button>
-                        <button onclick="syncData()" class="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition" title="Sincronizar"><i class="fas fa-sync-alt"></i></button>
+                        <!-- FIX: Changed onclick to toggleModal directly -->
+                        <button onclick="toggleModal('history-modal')" class="h-12 w-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-sm" title="Ver Historial">
+                            <i class="fas fa-history text-lg"></i>
+                        </button>
+                        <button onclick="triggerSync()" class="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-sm" title="Sincronizar Ahora">
+                            <i class="fas fa-cloud-upload-alt text-lg"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL CONFIGURACIÓN -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-gray-900/60" onclick="toggleModal('settings-modal')"></div>
-        <div id="modal-content-settings" class="modal-container bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl z-50 transform scale-95 opacity-0 flex flex-col max-h-[90vh]">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="toggleModal('settings-modal')"></div>
+        <div id="modal-content-settings" class="modal-container bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl z-50 transform scale-95 opacity-0 flex flex-col max-h-[90vh]">
             
-            <!-- Tabs Header -->
             <div class="flex border-b border-gray-100 dark:border-gray-700">
-                <button onclick="switchTab('tab-cloud')" id="btn-tab-cloud" class="tab-btn active flex-1 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-500 transition">GitHub Cloud</button>
-                <button onclick="switchTab('tab-custom')" id="btn-tab-custom" class="tab-btn flex-1 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-500 transition">Personalizar</button>
+                <button onclick="switchTab('tab-cloud')" id="btn-tab-cloud" class="tab-btn active flex-1 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-500 transition relative">Nube / GitHub</button>
+                <button onclick="switchTab('tab-custom')" id="btn-tab-custom" class="tab-btn flex-1 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-500 transition relative">Personalizar</button>
             </div>
 
-            <div class="overflow-y-auto p-6">
-                <!-- TAB 1: GITHUB -->
-                <div id="tab-cloud" class="space-y-4">
-                    <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 flex gap-2">
-                        <i class="fas fa-cloud"></i> Sincroniza tus datos entre dispositivos.
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Usuario GitHub</label>
-                        <input type="text" id="gh-username" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Repositorio</label>
-                        <input type="text" id="gh-repo" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Token (Classic)</label>
-                        <input type="password" id="gh-token" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white">
-                    </div>
-                </div>
-
-                <!-- TAB 2: PERSONALIZAR -->
-                <div id="tab-custom" class="hidden space-y-5">
-                    <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800 text-center transition-all" id="preview-box">
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400 uppercase font-bold mb-1">Meta Total Estimada</p>
-                        <p id="calc-total" class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">$ 0</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
+            <div class="overflow-y-auto p-6 scroll-smooth custom-scrollbar">
+                <!-- Tab: GitHub -->
+                <div id="tab-cloud" class="space-y-5">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl text-xs text-blue-700 dark:text-blue-300 flex gap-3 items-start">
+                        <i class="fas fa-info-circle text-lg mt-0.5"></i>
                         <div>
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Valor Inicial</label>
-                            <input type="number" id="conf-base" step="5000" oninput="updateCalc()" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono" value="160000">
+                            <p class="font-bold mb-1">Sincronización Cloud</p>
+                            <p>Ingresa tus credenciales de GitHub para guardar tu progreso en la nube. Necesitas un <strong>Personal Access Token</strong> con permiso de 'repo'.</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Usuario GitHub</label>
+                            <div class="relative mt-1">
+                                <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="gh-username" placeholder="Ej: tu-usuario" class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white transition-all">
+                            </div>
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Incremento</label>
-                            <input type="number" id="conf-step" step="5000" oninput="updateCalc()" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono" value="10000">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Repositorio</label>
+                            <div class="relative mt-1">
+                                <i class="fas fa-book-bookmark absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="gh-repo" placeholder="Ej: mis-ahorros" class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white transition-all">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Token (Classic)</label>
+                            <div class="relative mt-1">
+                                <i class="fas fa-key absolute left-3 top-3 text-gray-400"></i>
+                                <input type="password" id="gh-token" placeholder="ghp_..." class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white transition-all">
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+                        <button onclick="testConnection()" class="flex-1 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white rounded-lg text-sm font-bold transition">
+                            <i class="fas fa-plug mr-2"></i> Probar Conexión
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Customization -->
+                <div id="tab-custom" class="hidden space-y-6">
+                    <div class="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 text-center transition-all shadow-sm" id="preview-box">
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400 uppercase font-bold mb-2 tracking-wide">Meta Total Estimada</p>
+                        <p id="calc-total" class="text-3xl font-black text-emerald-700 dark:text-emerald-300 tracking-tight">$ 0</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-5">
                         <div>
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Filas</label>
-                            <input type="number" id="conf-rows" oninput="updateCalc()" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono" value="7" min="1" max="50">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Valor Inicial</label>
+                            <input type="number" id="conf-base" min="0" step="1000" oninput="updateCalc()" class="w-full mt-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono font-bold text-right" value="160000">
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Columnas</label>
-                            <input type="number" id="conf-cols" oninput="updateCalc()" class="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono" value="5" min="1" max="10">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Incremento</label>
+                            <input type="number" id="conf-step" min="0" step="1000" oninput="updateCalc()" class="w-full mt-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono font-bold text-right" value="10000">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Filas (Max 50)</label>
+                            <input type="number" id="conf-rows" min="1" max="50" oninput="updateCalc()" class="w-full mt-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono font-bold text-center" value="7">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Columnas (Max 10)</label>
+                            <input type="number" id="conf-cols" min="1" max="10" oninput="updateCalc()" class="w-full mt-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white font-mono font-bold text-center" value="5">
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Sonidos</label>
-                        <div class="flex items-center mt-2 gap-3">
-                            <label class="flex items-center cursor-pointer relative">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Preferencias</label>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mt-1">
+                            <label class="flex items-center cursor-pointer relative justify-between">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Efectos de Sonido</span>
                                 <input type="checkbox" id="conf-sound" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Efectos de Audio</span>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[22px] peer-checked:after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
                     </div>
-                    <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <button onclick="resetData()" class="w-full py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-bold transition">
-                            <i class="fas fa-trash-alt mr-2"></i> Borrar todos los datos
+                    
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <button onclick="resetData()" class="w-full py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 border border-transparent hover:border-red-100 dark:hover:border-red-900/30">
+                            <i class="fas fa-trash-alt"></i> Reiniciar Todo el Progreso
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl flex justify-end gap-3">
-                <button onclick="toggleModal('settings-modal')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium text-sm transition">Cancelar</button>
-                <button onclick="saveAllSettings()" class="px-6 py-2 bg-gray-900 dark:bg-emerald-600 hover:bg-gray-800 dark:hover:bg-emerald-700 text-white rounded-lg font-bold text-sm shadow-lg transition transform active:scale-95">Guardar Cambios</button>
+                <button onclick="toggleModal('settings-modal')" class="px-5 py-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-bold text-sm transition">Cancelar</button>
+                <button onclick="saveAllSettings()" class="px-6 py-2 bg-gray-900 dark:bg-emerald-600 hover:bg-gray-800 dark:hover:bg-emerald-500 text-white rounded-lg font-bold text-sm shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL HISTORIAL -->
+    <!-- History Modal -->
     <div id="history-modal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-gray-900/60" onclick="toggleModal('history-modal')"></div>
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="toggleModal('history-modal')"></div>
         <div id="modal-content-history" class="modal-container bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl z-50 transform scale-95 opacity-0 flex flex-col max-h-[80vh]">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 sticky top-0 z-10">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white">Movimientos</h3>
-                <button class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" onclick="toggleModal('history-modal')"><i class="fas fa-times text-xl"></i></button>
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 sticky top-0 z-10 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2"><i class="fas fa-list-ul text-emerald-500"></i> Movimientos</h3>
+                <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center" onclick="toggleModal('history-modal')"><i class="fas fa-times"></i></button>
             </div>
-            <div id="history-list" class="overflow-y-auto p-4 space-y-2 flex-1 bg-gray-50 dark:bg-gray-900/50"></div>
+            <div id="history-list" class="overflow-y-auto p-4 space-y-3 flex-1 bg-gray-50 dark:bg-gray-900/50 custom-scrollbar"></div>
+            <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 rounded-b-2xl text-center">
+                 <p class="text-xs text-gray-400">Total ahorrado hasta ahora</p>
+                 <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono" id="history-total">$ 0</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // CONFIG & STATE
-        const STORE_KEY = 'savings_app_v3';
-        const CONFIG_KEY = 'savings_config_v3';
+        // --- Constants & Global State ---
+        const APP_VERSION = 'v3.0';
+        const STORE_KEY = 'savings_app_data';
+        const CONFIG_KEY = 'savings_app_config';
         
-        let state = {};
+        // Default Config
         let config = {
             gh: { user: '', repo: '', token: '' },
             grid: { base: 160000, step: 10000, rows: 7, cols: 5 },
             sound: true,
             theme: 'system'
         };
-        let currentSha = null;
 
-        // AUDIO
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Default State (Data)
+        let state = {
+            cells: {}, // { index: { val: 100, date: '...', timestamp: 123 } }
+            lastUpdated: 0
+        };
+
+        let currentSha = null; // SHA for GitHub file updates
+        let audioCtx = null;   // Lazy loaded audio context
+
+        // --- Audio System (Lazy Load) ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
         function playSound(type) {
             if (!config.sound) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            initAudio(); // Ensure context exists and is running
+            
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            
             if (type === 'pop') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                // Success sound (High pitch sine sweep)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'untick') {
+                // Remove sound (Low pitch blip)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'error') {
+                // Error sound (Sawtooth drop)
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
             }
         }
 
-        // INIT
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             loadConfig();
             loadTheme();
+            
+            // Try load local data first
+            loadLocalData();
+            
+            // Render UI
             renderGrid();
-            if(config.gh.token) syncData();
-            else loadLocalData();
+            
+            // If GitHub configured, try checking status (don't auto-sync destructively)
+            if(config.gh.token) {
+                checkCloudStatus();
+            }
         });
 
-        // CALCULATION
+        // --- Core Logic ---
         function calculateTotalGoal() {
             const { base, step, rows, cols } = config.grid;
             let rowSum = 0;
@@ -296,47 +383,63 @@
         }
 
         function updateCalc() {
+            // Validation to prevent UI breaking
+            let r = parseInt(document.getElementById('conf-rows').value) || 1;
+            let c = parseInt(document.getElementById('conf-cols').value) || 1;
+            if(r > 50) r = 50; if(r < 1) r = 1;
+            if(c > 10) c = 10; if(c < 1) c = 1;
+            
             const tempGrid = {
-                base: parseInt(document.getElementById('conf-base').value) || 0,
-                step: parseInt(document.getElementById('conf-step').value) || 0,
-                rows: parseInt(document.getElementById('conf-rows').value) || 0,
-                cols: parseInt(document.getElementById('conf-cols').value) || 0
+                base: Math.max(0, parseInt(document.getElementById('conf-base').value) || 0),
+                step: Math.max(0, parseInt(document.getElementById('conf-step').value) || 0),
+                rows: r,
+                cols: c
             };
+            
             let rowSum = 0;
             for(let i=0; i<tempGrid.cols; i++) rowSum += tempGrid.base + (i * tempGrid.step);
             document.getElementById('calc-total').textContent = formatMoney(rowSum * tempGrid.rows);
         }
 
-        // CORE LOGIC
         function toggleCell(idx, val, e) {
-            let isAdding = !state[idx];
+            initAudio(); // User interaction implies we can start audio
+            
+            let isAdding = !state.cells[idx];
             if (isAdding) {
-                state[idx] = { 
+                state.cells[idx] = { 
                     val, 
                     date: new Date().toLocaleDateString('es-CO', {day:'numeric', month:'short'}),
-                    timestamp: Date.now() // SE AGREGA TIMESTAMP PARA ORDENAR
+                    timestamp: Date.now()
                 };
                 playSound('pop');
                 triggerConfetti(e);
                 showFloatText(e, val);
             } else {
-                delete state[idx];
+                delete state.cells[idx];
                 playSound('untick');
             }
+            
+            state.lastUpdated = Date.now();
+            
             updateCellUI(idx);
             updateSummary();
-            saveData();
+            saveLocalData();
             checkWin();
         }
 
-        // UI RENDER
+        // --- Rendering ---
         function renderGrid() {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
+            
             const { base, step, rows, cols } = config.grid;
+            // Generate distinct column values
             const colValues = Array.from({length: cols}, (_, i) => base + (i * step));
             
-            document.getElementById('grid-info').textContent = `${formatMoney(base)} - ${formatMoney(colValues[cols-1])}`;
+            // Update info text
+            document.getElementById('grid-info').textContent = `${rows}x${cols}`;
+            
+            // Set grid CSS
             container.style.gridTemplateColumns = `repeat(${window.innerWidth < 640 ? 2 : cols}, minmax(0, 1fr))`;
 
             let idx = 0;
@@ -344,13 +447,15 @@
                 for (let c = 0; c < cols; c++) {
                     const val = colValues[c];
                     const cellId = idx;
+                    
                     const el = document.createElement('div');
                     el.id = `c-${cellId}`;
-                    el.className = `cell relative bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl h-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden group transition-colors`;
                     el.onclick = (e) => toggleCell(cellId, val, e);
-                    el.innerHTML = `<span class="font-bold text-gray-700 dark:text-gray-300 text-base sm:text-lg group-hover:text-emerald-500 transition">${formatMoney(val)}</span>`;
+                    
+                    // Initial rendering content will be handled by updateCellUI
                     container.appendChild(el);
-                    updateCellUI(cellId, val);
+                    updateCellUI(cellId, val); // Logic separated for reuse
+                    
                     idx++;
                 }
             }
@@ -360,149 +465,445 @@
         function updateCellUI(idx, valIfNew) {
             const el = document.getElementById(`c-${idx}`);
             if (!el) return;
-            const entry = state[idx];
+            
+            const entry = state.cells[idx];
+            
             if (entry) {
+                // SAVED STATE
                 el.className = `cell relative bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-500 dark:border-emerald-500 rounded-xl h-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden shadow-md scale-[0.98]`;
-                el.innerHTML = `<div class="text-emerald-600 dark:text-emerald-400 font-bold text-lg">${formatMoney(entry.val)}</div><div class="text-[10px] text-emerald-800 dark:text-emerald-200 bg-emerald-200/50 dark:bg-emerald-600/30 px-2 rounded-full mt-1">${entry.date}</div><i class="fas fa-check-circle text-emerald-500 absolute top-1 right-1 text-sm check-icon"></i>`;
+                el.innerHTML = `
+                    <div class="text-emerald-600 dark:text-emerald-400 font-bold text-lg">${formatMoney(entry.val)}</div>
+                    <div class="text-[10px] text-emerald-800 dark:text-emerald-200 bg-emerald-200/50 dark:bg-emerald-600/30 px-2 rounded-full mt-1">${entry.date}</div>
+                    <i class="fas fa-check-circle text-emerald-500 absolute top-1 right-1 text-sm check-icon"></i>
+                `;
             } else {
+                // EMPTY STATE
                 const { base, step, cols } = config.grid;
                 const val = valIfNew || (base + ((idx % cols) * step));
+                
                 el.className = `cell relative bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl h-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden group hover:border-emerald-200 dark:hover:border-gray-600`;
                 el.innerHTML = `<span class="font-bold text-gray-700 dark:text-gray-300 text-base sm:text-lg group-hover:text-emerald-500 transition">${formatMoney(val)}</span>`;
             }
         }
 
         function updateSummary() {
-            const values = Object.values(state);
+            const values = Object.values(state.cells);
             const count = values.length;
             const total = values.reduce((acc, cur) => acc + cur.val, 0);
             const maxCells = config.grid.rows * config.grid.cols;
-            document.getElementById('progress-text').textContent = `${Math.round((count/maxCells)*100)}%`;
+            const percentage = maxCells > 0 ? Math.round((count/maxCells)*100) : 0;
+            const goal = calculateTotalGoal();
+
+            document.getElementById('progress-text').textContent = `${percentage}%`;
             document.getElementById('total-amount').textContent = formatMoney(total);
-            document.getElementById('goal-display').textContent = `Meta: ${formatMoney(calculateTotalGoal())}`;
-            document.getElementById('progress-bar').style.width = `${(count/maxCells)*100}%`;
-        }
-
-        // HISTORIAL REPARADO
-        function openHistory() {
-            const list = document.getElementById('history-list');
-            // Ordenar por timestamp descendente, si no existe, reversa simple
-            const entries = Object.values(state).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            document.getElementById('history-total').textContent = formatMoney(total);
+            document.getElementById('goal-display').textContent = `Meta: ${formatMoney(goal)}`;
             
-            if(entries.length === 0) {
-                list.innerHTML = `<div class="text-center py-8 text-gray-400 dark:text-gray-500 opacity-60"><i class="fas fa-ghost text-3xl mb-2"></i><p>Aún no has comenzado tu ahorro.</p></div>`;
-            } else {
-                list.innerHTML = entries.map(e => `
-                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i class="fas fa-check text-xs"></i></div>
-                            <div>
-                                <div class="font-bold text-gray-800 dark:text-gray-200">${formatMoney(e.val)}</div>
-                                <div class="text-xs text-gray-400">${e.date}</div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+            const bar = document.getElementById('progress-bar');
+            bar.style.width = `${percentage}%`;
+            
+            // Update Title for fun
+            document.title = percentage === 100 ? "¡Reto Completado!" : `Ahorro: ${percentage}%`;
+        }
+
+        // --- Data Management ---
+
+        function loadLocalData() {
+            try {
+                const l = localStorage.getItem(STORE_KEY);
+                if(l) { 
+                    const parsed = JSON.parse(l);
+                    // Migration check: If old V2 format (array/object directly) convert to new V3 {cells, lastUpdated}
+                    if (!parsed.cells && !parsed.lastUpdated) {
+                        state.cells = parsed; // Assume it was just the cells object
+                        state.lastUpdated = Date.now();
+                    } else {
+                        state = parsed;
+                    }
+                    updateSummary();
+                }
+            } catch(e) {
+                console.error("Error loading local data", e);
+                showToast("Error leyendo datos locales", "error");
             }
-            toggleModal('history-modal');
         }
 
-        // SETTINGS
-        function saveAllSettings() {
-            config.gh.user = document.getElementById('gh-username').value;
-            config.gh.repo = document.getElementById('gh-repo').value;
-            config.gh.token = document.getElementById('gh-token').value;
-            config.grid.base = parseInt(document.getElementById('conf-base').value) || 160000;
-            config.grid.step = parseInt(document.getElementById('conf-step').value) || 10000;
-            config.grid.rows = parseInt(document.getElementById('conf-rows').value) || 7;
-            config.grid.cols = parseInt(document.getElementById('conf-cols').value) || 5;
-            config.sound = document.getElementById('conf-sound').checked;
-            saveConfig();
-            renderGrid();
-            toggleModal('settings-modal');
-            if (config.gh.token) syncData();
-            showToast('Configuración aplicada', 'success');
+        function saveLocalData() {
+            localStorage.setItem(STORE_KEY, JSON.stringify(state));
+            updateSyncStatus('local');
         }
 
+        async function triggerSync() {
+            if(!config.gh.token) {
+                showToast('Configura GitHub primero', 'info');
+                toggleModal('settings-modal');
+                switchTab('tab-cloud');
+                return;
+            }
+            
+            // Logic: Always fetch first to get SHA and latest Cloud state
+            showLoader(true);
+            try {
+                const cloudData = await fetchFromGithub();
+                
+                if (!cloudData) {
+                    // File doesn't exist remotely, create it
+                    await saveToGithub();
+                } else {
+                    // Compare timestamps
+                    const localTime = state.lastUpdated || 0;
+                    const cloudTime = cloudData.data.lastUpdated || 0;
+
+                    if (localTime > cloudTime) {
+                         // Local is newer -> Push
+                         await saveToGithub();
+                         showToast('Nube actualizada (Local era más reciente)', 'success');
+                    } else if (cloudTime > localTime) {
+                        // Cloud is newer -> Pull
+                        if(confirm(`La versión en la nube es más reciente (${new Date(cloudTime).toLocaleString()}). \n¿Quieres sobrescribir tus datos locales?`)) {
+                            state = cloudData.data;
+                            currentSha = cloudData.sha;
+                            saveLocalData(); // Save without changing timestamp
+                            renderGrid();
+                            showToast('Datos locales actualizados desde la nube', 'success');
+                        } else {
+                            // User refused update. We can offer to force push?
+                            if(confirm("¿Quieres FORZAR la subida de tu versión local (más antigua)? Esto borrará la versión de la nube.")) {
+                                await saveToGithub();
+                            }
+                        }
+                    } else {
+                        showToast('Ya está sincronizado', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                playSound('error');
+                showToast(`Error Sync: ${error.message}`, 'error');
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // Helper: Just fetch
+        async function fetchFromGithub() {
+            const url = `https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro_v3.json`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `token ${config.gh.token}`, 'Accept': 'application/vnd.github.v3+json' },
+                cache: 'no-store'
+            });
+            
+            if (res.status === 404) return null; // Not found
+            if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
+            
+            const d = await res.json();
+            const content = JSON.parse(decodeURIComponent(escape(atob(d.content)))); // Safe b64 decode
+            return { data: content, sha: d.sha };
+        }
+
+        // Helper: Just save
+        async function saveToGithub() { 
+            const url = `https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro_v3.json`;
+            // Re-fetch SHA immediately before save to reduce conflict windows
+            if(!currentSha) {
+                try {
+                    const check = await fetch(url, { headers: { 'Authorization': `token ${config.gh.token}` } });
+                    if(check.ok) {
+                        const d = await check.json();
+                        currentSha = d.sha;
+                    }
+                } catch(e) {}
+            }
+
+            // Encode content safe for utf-8
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+            
+            const body = { 
+                message: `Update Savings ${new Date().toLocaleDateString()}`, 
+                content, 
+                sha: currentSha 
+            };
+            
+            const res = await fetch(url, { 
+                method: 'PUT', 
+                headers: {
+                    'Authorization': `token ${config.gh.token}`, 
+                    'Content-Type': 'application/json'
+                }, 
+                body: JSON.stringify(body) 
+            });
+
+            if (!res.ok) throw new Error("No se pudo escribir en GitHub. Revisa permisos.");
+            
+            const d = await res.json();
+            currentSha = d.content.sha;
+            updateSyncStatus('synced');
+            showToast('Guardado en GitHub correctamente', 'success');
+        }
+
+        // Purely UI status check
+        async function checkCloudStatus() {
+            updateSyncStatus('checking');
+            try {
+                const cloud = await fetchFromGithub();
+                if(cloud) {
+                    currentSha = cloud.sha;
+                    updateSyncStatus('synced');
+                } else {
+                    updateSyncStatus('local'); // No file on cloud yet
+                }
+            } catch(e) {
+                updateSyncStatus('error');
+            }
+        }
+
+        async function testConnection() {
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando...';
+            
+            // Temporary save to config for testing
+            config.gh.user = document.getElementById('gh-username').value.trim();
+            config.gh.repo = document.getElementById('gh-repo').value.trim();
+            config.gh.token = document.getElementById('gh-token').value.trim();
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${config.gh.user}/${config.gh.repo}`, {
+                    headers: { 'Authorization': `token ${config.gh.token}` }
+                });
+                if(res.ok) {
+                    showToast("Conexión Exitosa. Repositorio detectado.", "success");
+                    playSound('pop');
+                } else {
+                    throw new Error(res.status === 401 ? "Token inválido" : "Repositorio no encontrado");
+                }
+            } catch(e) {
+                showToast(e.message, "error");
+                playSound('error');
+            } finally {
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // --- Config & Settings ---
         function loadConfig() {
             const saved = localStorage.getItem(CONFIG_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
+                // Deep merge logic simplified
                 if (parsed.grid) config.grid = { ...config.grid, ...parsed.grid };
                 if (parsed.gh) config.gh = { ...config.gh, ...parsed.gh };
                 if (parsed.sound !== undefined) config.sound = parsed.sound;
                 if (parsed.theme) config.theme = parsed.theme;
             }
+            
+            // Set inputs
             document.getElementById('gh-username').value = config.gh.user;
             document.getElementById('gh-repo').value = config.gh.repo;
             document.getElementById('gh-token').value = config.gh.token;
+            
             document.getElementById('conf-base').value = config.grid.base;
             document.getElementById('conf-step').value = config.grid.step;
             document.getElementById('conf-rows').value = config.grid.rows;
             document.getElementById('conf-cols').value = config.grid.cols;
             document.getElementById('conf-sound').checked = config.sound;
+            
             updateCalc();
         }
 
         function saveConfig() { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
 
-        // UTILS
-        async function saveData() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); if (config.gh.token) await saveToGithub(); }
-        async function saveToGithub() { 
-            const url = `https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro.json`;
-            const content = btoa(JSON.stringify(state));
-            const body = { message: "Update", content, sha: currentSha };
-            try { 
-                await fetch(url, { method: 'PUT', headers: {'Authorization': `token ${config.gh.token}`, 'Content-Type': 'application/json'}, body: JSON.stringify(body) }); 
-                showStatus('Guardado', 'green'); 
-            } catch(e){}
-        }
-        async function syncData() {
-            showLoader(true);
-            try {
-                const res = await fetch(`https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro.json`, {headers:{'Authorization':`token ${config.gh.token}`},cache:'no-store'});
-                if(res.ok) { 
-                    const d = await res.json(); currentSha = d.sha; state = JSON.parse(atob(d.content)); 
-                    renderGrid(); updateSummary(); showStatus('Sincronizado','green'); 
+        function saveAllSettings() {
+            const oldGrid = { ...config.grid };
+            
+            config.gh.user = document.getElementById('gh-username').value.trim();
+            config.gh.repo = document.getElementById('gh-repo').value.trim();
+            config.gh.token = document.getElementById('gh-token').value.trim();
+            
+            // Validate grid numbers
+            let r = parseInt(document.getElementById('conf-rows').value);
+            let c = parseInt(document.getElementById('conf-cols').value);
+            if (r<1) r=1; if(c<1) c=1;
+            
+            config.grid.base = parseInt(document.getElementById('conf-base').value);
+            config.grid.step = parseInt(document.getElementById('conf-step').value);
+            config.grid.rows = r;
+            config.grid.cols = c;
+            
+            config.sound = document.getElementById('conf-sound').checked;
+            
+            saveConfig();
+            
+            // Re-render only if grid changed
+            if (JSON.stringify(oldGrid) !== JSON.stringify(config.grid)) {
+                if(confirm("Cambiar la cuadrícula podría desordenar los cheques visualmente si reduces el tamaño. ¿Continuar?")) {
+                    renderGrid();
                 }
-            } catch(e){}
-            showLoader(false);
+            }
+
+            toggleModal('settings-modal');
+            showToast('Configuración guardada', 'success');
+            
+            // Check cloud again with new creds
+            if(config.gh.token) checkCloudStatus();
         }
-        function loadLocalData() { const l = localStorage.getItem(STORE_KEY); if(l) { state = JSON.parse(l); updateSummary(); } }
-        function toggleTheme() { const h = document.documentElement; const d = h.classList.toggle('dark'); config.theme = d ? 'dark' : 'light'; saveConfig(); }
-        function loadTheme() { if(config.theme === 'dark' || (!config.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); }
-        function formatMoney(v) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits:0 }).format(v); }
+
+        // --- UI Utils ---
+        function toggleTheme() { 
+            const h = document.documentElement; 
+            const d = h.classList.toggle('dark'); 
+            config.theme = d ? 'dark' : 'light'; 
+            saveConfig(); 
+        }
+        
+        function loadTheme() { 
+            if(config.theme === 'dark' || (!config.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) 
+                document.documentElement.classList.add('dark'); 
+        }
+        
+        function formatMoney(v) { 
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits:0 }).format(v); 
+        }
+        
         function showToast(msg, type) { 
-            const t=document.createElement('div'); t.className=`toast toast-${type} show`; t.innerHTML=msg; document.getElementById('toast-container').appendChild(t); setTimeout(()=>{t.remove()},3000);
+            const t=document.createElement('div'); 
+            t.className=`toast toast-${type} show`; 
+            
+            let icon = '';
+            if(type==='success') icon = '<i class="fas fa-check-circle text-emerald-500"></i>';
+            if(type==='error') icon = '<i class="fas fa-exclamation-circle text-red-500"></i>';
+            if(type==='info') icon = '<i class="fas fa-info-circle text-blue-500"></i>';
+            
+            t.innerHTML=`${icon}<span class="text-sm font-medium text-gray-700 dark:text-gray-200">${msg}</span>`; 
+            document.getElementById('toast-container').appendChild(t); 
+            setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(), 400)}, 3000);
         }
-        function showStatus(msg, color) { 
-            const el = document.getElementById('status-indicator');
-            const map = { green: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200', blue: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200', red: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200', gray: 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400' };
-            el.className = `inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide transition-colors ${map[color] || map.gray}`;
-            el.querySelector('span').className = `w-2 h-2 mr-1 rounded-full ${color === 'gray' ? 'bg-gray-400' : 'bg-current'}`;
-            el.innerHTML = `<span class="${el.querySelector('span').className}"></span> ${msg}`;
-        }
-        function triggerConfetti(e) { confetti({ origin: { x: e.clientX/window.innerWidth, y: e.clientY/window.innerHeight } }); }
-        function showFloatText(e, val) { 
-            const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = `+ ${formatMoney(val)}`; el.style.left = e.clientX+'px'; el.style.top = e.clientY+'px'; document.body.appendChild(el); setTimeout(()=>el.remove(),800);
-        }
-        function checkWin() { if(Object.keys(state).length === config.grid.rows*config.grid.cols) showToast('¡Ganaste!', 'success'); }
-        function switchTab(id) { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+id).classList.add('active'); document.getElementById('tab-cloud').classList.add('hidden'); document.getElementById('tab-custom').classList.add('hidden'); document.getElementById(id).classList.remove('hidden'); }
-        function toggleModal(id) { 
-            const modal = document.getElementById(id);
-            const content = modal.querySelector(id === 'settings-modal' ? '#modal-content-settings' : '#modal-content-history');
-            if (!modal.classList.contains('opacity-0')) {
-                modal.classList.add('opacity-0', 'pointer-events-none');
-                content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0');
-                document.body.classList.remove('modal-active');
-            } else {
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
-                document.body.classList.add('modal-active');
+        
+        function updateSyncStatus(status) { 
+            const btn = document.getElementById('sync-status-btn');
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            
+            // Reset classes
+            dot.className = "w-2 h-2 mr-2 rounded-full";
+            
+            if (status === 'synced') {
+                dot.classList.add('bg-emerald-500');
+                txt.textContent = 'Nube OK';
+            } else if (status === 'checking') {
+                dot.classList.add('bg-blue-400', 'animate-pulse');
+                txt.textContent = '...';
+            } else if (status === 'error') {
+                dot.classList.add('bg-red-500');
+                txt.textContent = 'Error Nube';
+            } else { // local
+                dot.classList.add('bg-gray-400');
+                txt.textContent = 'Local';
             }
         }
+        
+        function triggerConfetti(e) { 
+            // Only if confetti loaded
+            if (typeof confetti === 'function') {
+                const x = e ? e.clientX / window.innerWidth : 0.5;
+                const y = e ? e.clientY / window.innerHeight : 0.5;
+                confetti({ origin: { x, y }, particleCount: 60, spread: 70, colors: ['#10b981', '#34d399', '#f59e0b'] }); 
+            }
+        }
+        
+        function showFloatText(e, val) { 
+            const el = document.createElement('div'); 
+            el.className = 'floating-text'; 
+            el.textContent = `+ ${formatMoney(val)}`; 
+            el.style.left = (e.clientX - 40) + 'px'; 
+            el.style.top = (e.clientY - 40) + 'px'; 
+            document.body.appendChild(el); 
+            setTimeout(()=>el.remove(),800);
+        }
+        
+        function checkWin() { 
+            if(Object.keys(state.cells).length === config.grid.rows*config.grid.cols) {
+                showToast('¡Felicidades! Reto completado.', 'success');
+                triggerConfetti({clientX: window.innerWidth/2, clientY: window.innerHeight/2});
+                playSound('pop');
+            }
+        }
+        
+        function switchTab(id) { 
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
+            document.getElementById('btn-'+id).classList.add('active'); 
+            document.getElementById('tab-cloud').classList.add('hidden'); 
+            document.getElementById('tab-custom').classList.add('hidden'); 
+            document.getElementById(id).classList.remove('hidden'); 
+        }
+        
+        function toggleModal(id) { 
+            const modal = document.getElementById(id);
+            const content = modal.querySelector('.modal-container');
+            if (!modal.classList.contains('opacity-0')) {
+                // Close
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-100', 'opacity-100'); 
+                content.classList.add('scale-95', 'opacity-0');
+                document.body.classList.remove('modal-active');
+            } else {
+                // Open
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                // Small delay for animation
+                setTimeout(() => { 
+                    content.classList.remove('scale-95', 'opacity-0'); 
+                    content.classList.add('scale-100', 'opacity-100'); 
+                }, 10);
+                document.body.classList.add('modal-active');
+                
+                // If opening history, render it
+                if(id === 'history-modal') renderHistoryList();
+            }
+        }
+        
+        // --- ADDED FALLBACK FOR OPENHISTORY ---
+        function openHistory() {
+             toggleModal('history-modal');
+        }
+
+        function renderHistoryList() {
+            const list = document.getElementById('history-list');
+            const entries = Object.values(state.cells).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            
+            if(entries.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-10 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 opacity-60">
+                        <i class="fas fa-wallet text-4xl mb-3"></i>
+                        <p>Aún no has comenzado tu ahorro.</p>
+                    </div>`;
+            } else {
+                list.innerHTML = entries.map(e => `
+                    <div class="flex justify-between items-center bg-white dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
+                                <i class="fas fa-check text-sm"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 dark:text-gray-200">${formatMoney(e.val)}</div>
+                                <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wide">${e.date}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
         function showLoader(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); }
-        function resetData() { if(confirm("Reset?")) { state={}; saveData(); renderGrid(); } }
+        
+        function resetData() { 
+            if(confirm("¿Estás seguro de que quieres borrar TODO el progreso? Esta acción no se puede deshacer.")) { 
+                state = { cells: {}, lastUpdated: Date.now() }; 
+                saveLocalData(); 
+                renderGrid();
+                toggleModal('settings-modal');
+                showToast('Datos reiniciados correctamente', 'success');
+            } 
+        }
     </script>
 </body>
 </html>
