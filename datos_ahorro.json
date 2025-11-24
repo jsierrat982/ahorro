@@ -13,5 +13,15 @@
     "value": 190000,
     "date": "24 de nov de 2025",
     "timestamp": 1763965446857
+  },
+  "4": {
+    "value": 200000,
+    "date": "24 de nov de 2025",
+    "timestamp": 1763965450301
+  },
+  "8": {
+    "value": 190000,
+    "date": "24 de nov de 2025",
+    "timestamp": 1763965447494
   }
 }
