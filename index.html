@@ -132,23 +132,21 @@
                         <div class="flex items-baseline justify-end gap-1">
                             <p id="total-amount" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 leading-none">$ 0</p>
                         </div>
-                        <!-- META VISIBLE -->
                         <p id="goal-display" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Meta: $ 0</p>
                     </div>
 
                     <div class="flex gap-2">
-                        <button onclick="openHistory()" class="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition"><i class="fas fa-history"></i></button>
-                        <button onclick="syncData()" class="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition"><i class="fas fa-sync-alt"></i></button>
+                        <button onclick="openHistory()" class="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition" title="Ver Historial"><i class="fas fa-history"></i></button>
+                        <button onclick="syncData()" class="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition" title="Sincronizar"><i class="fas fa-sync-alt"></i></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL CONFIGURACIÓN (ID CORREGIDO) -->
+    <!-- MODAL CONFIGURACIÓN -->
     <div id="settings-modal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-gray-900/60" onclick="toggleModal('settings-modal')"></div>
-        <!-- AQUI ESTABA EL ERROR: FALTABA EL ID modal-content-settings -->
         <div id="modal-content-settings" class="modal-container bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl z-50 transform scale-95 opacity-0 flex flex-col max-h-[90vh]">
             
             <!-- Tabs Header -->
@@ -179,7 +177,6 @@
 
                 <!-- TAB 2: PERSONALIZAR -->
                 <div id="tab-custom" class="hidden space-y-5">
-                    <!-- PREVISUALIZADOR -->
                     <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800 text-center transition-all" id="preview-box">
                         <p class="text-xs text-emerald-600 dark:text-emerald-400 uppercase font-bold mb-1">Meta Total Estimada</p>
                         <p id="calc-total" class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">$ 0</p>
@@ -232,12 +229,11 @@
         </div>
     </div>
 
-    <!-- MODAL HISTORIAL (ID CORREGIDO) -->
+    <!-- MODAL HISTORIAL -->
     <div id="history-modal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-gray-900/60" onclick="toggleModal('history-modal')"></div>
-        <!-- AQUI ESTABA EL OTRO ERROR: FALTABA EL ID modal-content-history -->
         <div id="modal-content-history" class="modal-container bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl z-50 transform scale-95 opacity-0 flex flex-col max-h-[80vh]">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 sticky top-0 z-10">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white">Movimientos</h3>
                 <button class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" onclick="toggleModal('history-modal')"><i class="fas fa-times text-xl"></i></button>
             </div>
@@ -259,7 +255,7 @@
         };
         let currentSha = null;
 
-        // AUDIO SYNTHESIS
+        // AUDIO
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
             if (!config.sound) return;
@@ -291,38 +287,35 @@
             else loadLocalData();
         });
 
-        // CALCULATION LOGIC
+        // CALCULATION
         function calculateTotalGoal() {
             const { base, step, rows, cols } = config.grid;
             let rowSum = 0;
-            for(let i=0; i<cols; i++) {
-                rowSum += base + (i * step);
-            }
+            for(let i=0; i<cols; i++) rowSum += base + (i * step);
             return rowSum * rows;
         }
 
         function updateCalc() {
-            // Simular config temporal para el cálculo en tiempo real
             const tempGrid = {
                 base: parseInt(document.getElementById('conf-base').value) || 0,
                 step: parseInt(document.getElementById('conf-step').value) || 0,
                 rows: parseInt(document.getElementById('conf-rows').value) || 0,
                 cols: parseInt(document.getElementById('conf-cols').value) || 0
             };
-            
             let rowSum = 0;
-            for(let i=0; i<tempGrid.cols; i++) {
-                rowSum += tempGrid.base + (i * tempGrid.step);
-            }
-            const total = rowSum * tempGrid.rows;
-            document.getElementById('calc-total').textContent = formatMoney(total);
+            for(let i=0; i<tempGrid.cols; i++) rowSum += tempGrid.base + (i * tempGrid.step);
+            document.getElementById('calc-total').textContent = formatMoney(rowSum * tempGrid.rows);
         }
 
         // CORE LOGIC
         function toggleCell(idx, val, e) {
             let isAdding = !state[idx];
             if (isAdding) {
-                state[idx] = { val, date: new Date().toLocaleDateString('es-CO', {day:'numeric', month:'short'}) };
+                state[idx] = { 
+                    val, 
+                    date: new Date().toLocaleDateString('es-CO', {day:'numeric', month:'short'}),
+                    timestamp: Date.now() // SE AGREGA TIMESTAMP PARA ORDENAR
+                };
                 playSound('pop');
                 triggerConfetti(e);
                 showFloatText(e, val);
@@ -336,7 +329,7 @@
             checkWin();
         }
 
-        // UI GENERATORS
+        // UI RENDER
         function renderGrid() {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
@@ -361,7 +354,7 @@
                     idx++;
                 }
             }
-            updateSummary(); // Update summary with new goal
+            updateSummary();
         }
 
         function updateCellUI(idx, valIfNew) {
@@ -384,13 +377,34 @@
             const count = values.length;
             const total = values.reduce((acc, cur) => acc + cur.val, 0);
             const maxCells = config.grid.rows * config.grid.cols;
-            const totalGoal = calculateTotalGoal();
-            
             document.getElementById('progress-text').textContent = `${Math.round((count/maxCells)*100)}%`;
             document.getElementById('total-amount').textContent = formatMoney(total);
-            // ACTUALIZAR META EN FOOTER
-            document.getElementById('goal-display').textContent = `Meta: ${formatMoney(totalGoal)}`;
+            document.getElementById('goal-display').textContent = `Meta: ${formatMoney(calculateTotalGoal())}`;
             document.getElementById('progress-bar').style.width = `${(count/maxCells)*100}%`;
+        }
+
+        // HISTORIAL REPARADO
+        function openHistory() {
+            const list = document.getElementById('history-list');
+            // Ordenar por timestamp descendente, si no existe, reversa simple
+            const entries = Object.values(state).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            
+            if(entries.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-gray-400 dark:text-gray-500 opacity-60"><i class="fas fa-ghost text-3xl mb-2"></i><p>Aún no has comenzado tu ahorro.</p></div>`;
+            } else {
+                list.innerHTML = entries.map(e => `
+                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i class="fas fa-check text-xs"></i></div>
+                            <div>
+                                <div class="font-bold text-gray-800 dark:text-gray-200">${formatMoney(e.val)}</div>
+                                <div class="text-xs text-gray-400">${e.date}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            toggleModal('history-modal');
         }
 
         // SETTINGS
@@ -398,13 +412,11 @@
             config.gh.user = document.getElementById('gh-username').value;
             config.gh.repo = document.getElementById('gh-repo').value;
             config.gh.token = document.getElementById('gh-token').value;
-            
             config.grid.base = parseInt(document.getElementById('conf-base').value) || 160000;
             config.grid.step = parseInt(document.getElementById('conf-step').value) || 10000;
             config.grid.rows = parseInt(document.getElementById('conf-rows').value) || 7;
             config.grid.cols = parseInt(document.getElementById('conf-cols').value) || 5;
             config.sound = document.getElementById('conf-sound').checked;
-
             saveConfig();
             renderGrid();
             toggleModal('settings-modal');
@@ -421,7 +433,6 @@
                 if (parsed.sound !== undefined) config.sound = parsed.sound;
                 if (parsed.theme) config.theme = parsed.theme;
             }
-            
             document.getElementById('gh-username').value = config.gh.user;
             document.getElementById('gh-repo').value = config.gh.repo;
             document.getElementById('gh-token').value = config.gh.token;
@@ -430,25 +441,30 @@
             document.getElementById('conf-rows').value = config.grid.rows;
             document.getElementById('conf-cols').value = config.grid.cols;
             document.getElementById('conf-sound').checked = config.sound;
-            
-            updateCalc(); // Calcular meta inicial en modal
+            updateCalc();
         }
 
         function saveConfig() { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
 
         // UTILS
         async function saveData() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); if (config.gh.token) await saveToGithub(); }
-        async function saveToGithub() { /* Same as before */ 
+        async function saveToGithub() { 
             const url = `https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro.json`;
             const content = btoa(JSON.stringify(state));
             const body = { message: "Update", content, sha: currentSha };
-            try { await fetch(url, { method: 'PUT', headers: {'Authorization': `token ${config.gh.token}`, 'Content-Type': 'application/json'}, body: JSON.stringify(body) }); showStatus('Guardado', 'green'); } catch(e){}
+            try { 
+                await fetch(url, { method: 'PUT', headers: {'Authorization': `token ${config.gh.token}`, 'Content-Type': 'application/json'}, body: JSON.stringify(body) }); 
+                showStatus('Guardado', 'green'); 
+            } catch(e){}
         }
-        async function syncData() { /* Same as before */
+        async function syncData() {
             showLoader(true);
             try {
                 const res = await fetch(`https://api.github.com/repos/${config.gh.user}/${config.gh.repo}/contents/datos_ahorro.json`, {headers:{'Authorization':`token ${config.gh.token}`},cache:'no-store'});
-                if(res.ok) { const d = await res.json(); currentSha = d.sha; state = JSON.parse(atob(d.content)); renderGrid(); updateSummary(); showStatus('Sincronizado','green'); }
+                if(res.ok) { 
+                    const d = await res.json(); currentSha = d.sha; state = JSON.parse(atob(d.content)); 
+                    renderGrid(); updateSummary(); showStatus('Sincronizado','green'); 
+                }
             } catch(e){}
             showLoader(false);
         }
@@ -456,23 +472,28 @@
         function toggleTheme() { const h = document.documentElement; const d = h.classList.toggle('dark'); config.theme = d ? 'dark' : 'light'; saveConfig(); }
         function loadTheme() { if(config.theme === 'dark' || (!config.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); }
         function formatMoney(v) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits:0 }).format(v); }
-        function showToast(msg, type) { /* Toast logic */ 
+        function showToast(msg, type) { 
             const t=document.createElement('div'); t.className=`toast toast-${type} show`; t.innerHTML=msg; document.getElementById('toast-container').appendChild(t); setTimeout(()=>{t.remove()},3000);
         }
-        function showStatus(msg, color) { /* Status logic */ document.getElementById('status-indicator').innerHTML = msg; }
+        function showStatus(msg, color) { 
+            const el = document.getElementById('status-indicator');
+            const map = { green: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200', blue: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200', red: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200', gray: 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400' };
+            el.className = `inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide transition-colors ${map[color] || map.gray}`;
+            el.querySelector('span').className = `w-2 h-2 mr-1 rounded-full ${color === 'gray' ? 'bg-gray-400' : 'bg-current'}`;
+            el.innerHTML = `<span class="${el.querySelector('span').className}"></span> ${msg}`;
+        }
         function triggerConfetti(e) { confetti({ origin: { x: e.clientX/window.innerWidth, y: e.clientY/window.innerHeight } }); }
-        function showFloatText(e, val) { /* Float text */ }
+        function showFloatText(e, val) { 
+            const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = `+ ${formatMoney(val)}`; el.style.left = e.clientX+'px'; el.style.top = e.clientY+'px'; document.body.appendChild(el); setTimeout(()=>el.remove(),800);
+        }
         function checkWin() { if(Object.keys(state).length === config.grid.rows*config.grid.cols) showToast('¡Ganaste!', 'success'); }
         function switchTab(id) { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+id).classList.add('active'); document.getElementById('tab-cloud').classList.add('hidden'); document.getElementById('tab-custom').classList.add('hidden'); document.getElementById(id).classList.remove('hidden'); }
         function toggleModal(id) { 
             const modal = document.getElementById(id);
-            // FIX: Ensure this selector works by providing correct ID in HTML
             const content = modal.querySelector(id === 'settings-modal' ? '#modal-content-settings' : '#modal-content-history');
-            
             if (!modal.classList.contains('opacity-0')) {
                 modal.classList.add('opacity-0', 'pointer-events-none');
-                content.classList.remove('scale-100', 'opacity-100');
-                content.classList.add('scale-95', 'opacity-0');
+                content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0');
                 document.body.classList.remove('modal-active');
             } else {
                 modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -481,7 +502,6 @@
             }
         }
         function showLoader(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); }
-        function openHistory() { /* History logic */ toggleModal('history-modal'); }
         function resetData() { if(confirm("Reset?")) { state={}; saveData(); renderGrid(); } }
     </script>
 </body>
